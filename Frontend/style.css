@@ -1,0 +1,18 @@
+body {
+    background-color: #f8f9fa;
+    font-family: Arial, sans-serif;
+}
+
+.login-box {
+    width: 400px;
+    border: 1px solid #000;
+    background-color: #fff;
+}
+
+.login-box input {
+    height: 45px;
+}
+
+.navbar-brand span {
+    font-size: 18px;
+}

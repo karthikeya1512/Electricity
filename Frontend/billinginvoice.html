@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Billing & Invoice - Mensa Power Controls</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body { background:#f5f7fa }
+.table thead { background:#212529;color:#fff }
+</style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<div class="container">
+  <a class="navbar-brand" href="index.html">
+    <img src="assets/images/blacklogo.png" height="40"> MENSA POWER CONTROLS
+  </a>
+
+  <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="menu">
+    <ul class="navbar-nav ms-auto">
+      <li class="nav-item"><a class="nav-link" href="customerbooking.html">Customer Bookings</a></li>
+      <li class="nav-item"><a class="nav-link active" href="billinginvoice.html">Billing & Invoice</a></li>
+    </ul>
+  </div>
+</div>
+</nav>
+
+<div class="container mt-4">
+<h4>Billing & Invoice</h4>
+
+<div class="table-responsive">
+<table class="table table-bordered table-hover">
+<thead>
+<tr>
+  <th>Invoice ID</th>
+  <th>Company</th>
+  <th>Service</th>
+  <th>Date</th>
+  <th>Amount</th>
+  <th>Status</th>
+  <th>Action</th>
+</tr>
+</thead>
+<tbody id="invoiceTable"></tbody>
+</table>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let invoices = [];
+
+/* LOAD INVOICES */
+async function loadAllInvoices() {
+  const res = await fetch("http://localhost:5000/all-invoices");
+  if (!res.ok) return;
+
+  invoices = await res.json();
+  const table = document.getElementById("invoiceTable");
+  table.innerHTML = "";
+
+  if (invoices.length === 0) {
+    table.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center text-muted">No invoices found</td>
+      </tr>
+    `;
+    return;
+  }
+
+  invoices.forEach(inv => {
+    table.innerHTML += `
+      <tr>
+        <td>${inv._id.slice(-6)}</td>
+        <td>${inv.companyName || "-"}</td>
+        <td>${inv.service || "-"}</td>
+        <td>${new Date(inv.createdAt).toLocaleDateString()}</td>
+        <td>₹${inv.amount}</td>
+
+        <td>
+          ${
+            inv.invoiceStatus === "Rejected"
+              ? `<span class="badge bg-danger">Booking Rejected</span>`
+              : `<span class="badge bg-success">Booking Confirmed</span>`
+          }
+        </td>
+
+        <td>
+          ${
+            inv.invoiceStatus !== "Rejected"
+              ? `
+                <button class="btn btn-sm btn-success me-1"
+                        onclick="confirmInvoice('${inv._id}')">
+                  Confirm
+                </button>
+
+                <button class="btn btn-sm btn-warning me-1"
+                        onclick="editInvoice('${inv._id}')">
+                  Edit
+                </button>
+              `
+              : ""
+          }
+
+          <button class="btn btn-sm btn-danger"
+                  onclick="rejectInvoice('${inv._id}')">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+/* CONFIRM */
+async function confirmInvoice(id) {
+  if (!confirm("Confirm this booking?")) return;
+
+  const res = await fetch(
+    `http://localhost:5000/invoice-confirm/${id}`,
+    { method: "PUT" }
+  );
+
+  if (!res.ok) {
+    alert("Failed to confirm booking");
+    return;
+  }
+
+  alert("Booking confirmed successfully ✅");
+  loadAllInvoices();
+}
+
+/* EDIT */
+async function editInvoice(id) {
+  const invoice = invoices.find(i => i._id === id);
+  if (!invoice) return;
+
+  const companyName = prompt("Enter company name", invoice.companyName);
+  const service = prompt("Enter service", invoice.service);
+  const amount = prompt("Enter amount", invoice.amount);
+
+  if (!companyName && !service && !amount) return;
+
+  await fetch(`http://localhost:5000/invoice/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ companyName, service, amount })
+  });
+
+  loadAllInvoices();
+}
+
+/* DELETE = REJECT */
+async function rejectInvoice(id) {
+  if (!confirm("Reject this booking?")) return;
+
+  const res = await fetch(
+    `http://localhost:5000/invoice-reject/${id}`,
+    { method: "PUT" }
+  );
+
+  if (!res.ok) {
+    alert("Failed to reject booking");
+    return;
+  }
+
+  alert("Booking rejected successfully ❌");
+  loadAllInvoices();
+}
+
+/* LOAD ON PAGE OPEN */
+loadAllInvoices();
+</script>
+
+</body>
+</html>
