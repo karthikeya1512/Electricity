@@ -90,6 +90,9 @@ const auth = (req, res, next) => {
   }
 };
 
+app.get("/",(req,res)=>{
+res.send("Hello world")
+})
 /* ================= TOKEN VERIFY ================= */
 app.get("/verify-token", auth, (req, res) => {
   res.set({
